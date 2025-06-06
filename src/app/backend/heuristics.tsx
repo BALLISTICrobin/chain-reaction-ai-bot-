@@ -2,7 +2,7 @@ import { board, gamestate, player } from "./game";
 import { getCriticalMass } from "./gameengine";
 
 // Heuristic 1: Orb count difference
-function heuristicOrbCount(state: gamestate, _aiPlayer: player): number {
+function heuristicOrbCount(state: gamestate): number {
     let redOrbs = 0;
     let blueOrbs = 0;
     for (const row of state.board) {
@@ -31,7 +31,7 @@ function heuristicCriticalControl(state: gamestate, aiPlayer: player): number {
   }
 
   // Heuristic 3: Board control (number of cells occupied)
-function heuristicBoardControl(state: gamestate, _aiPlayer: player): number {
+function heuristicBoardControl(state: gamestate): number {
     let blueCells = 0;
     let redCells = 0;
     for (const row of state.board) {
@@ -166,9 +166,9 @@ export function evaluate(state: gamestate, aiPlayer: player): number {
     return state.winner === aiPlayer ? Infinity : -Infinity;
   }
 
-  const orbScore = heuristicOrbCount(state, aiPlayer);                  
+  const orbScore = heuristicOrbCount(state);                  
   const criticalScore = heuristicCriticalControl(state, aiPlayer);     
-  const controlScore = heuristicBoardControl(state, aiPlayer);         
+  const controlScore = heuristicBoardControl(state);         
   const chainScore = heuristicExplosionChain(state, aiPlayer);         
   const safetyScore = heuristicPositionalSafety(state, aiPlayer);      
 
