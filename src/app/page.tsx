@@ -6,7 +6,6 @@ import { initializeBoard, applyMove } from './backend/gameengine';
 import { writeGameState } from './backend/filehandling';
 import Board from './frontend/board';
 import GameStatus from './frontend/gamestatus';
-import { write } from 'fs';
 
 export default function Home() {
   const [gameState, setGameState] = useState<gamestate>({
@@ -38,10 +37,10 @@ export default function Home() {
   const handleAiMove = useCallback(async () => {
     if (!isAiVsAi || gameState.winner !== 'blank' || isProcessing) return;
 
-    let gamestate: gamestate = applyMove(gameState, { row: 1, col: 1, player: gameState.current_player });
-    setGameState(gamestate);
+    let newState: gamestate = applyMove(gameState, { row: 1, col: 1, player: gameState.current_player });
+    setGameState(newState);
     try {
-      await writeGameState('gamestate.txt', 'AI1 Move:', gamestate);
+      await writeGameState('gamestate.txt', 'AI1 Move:', newState);
     } catch (fileError) {
       console.warn('Failed to save game state:', fileError);
     }
