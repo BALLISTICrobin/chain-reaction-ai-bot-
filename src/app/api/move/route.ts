@@ -23,7 +23,7 @@ export async function POST() {
     const newState = applyMove(state, bestMove);
     await writeGameState(filePath, 'AI Move:', newState);
     return NextResponse.json(newState, { status: 200 });
-  } catch (e) {
+  } catch{
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

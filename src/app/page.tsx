@@ -21,23 +21,12 @@ export default function Home() {
 
 
 
-  //add useeeffect to handle AI vs AI mode
-  useEffect(() => {
-    if (isAiVsAi && gameState.winner === 'blank' && !isProcessing) {
-      // Add small delay to make moves visible
-      const timer = setTimeout(() => {
-        
-        handleAiMove();
-      }, 2000);
 
-      return () => clearTimeout(timer);
-    }
-  }, [gameState.current_player, isAiVsAi, gameState.winner, isProcessing]);
 
   const handleAiMove = useCallback(async () => {
     if (!isAiVsAi || gameState.winner !== 'blank' || isProcessing) return;
 
-    let newState: gamestate = applyMove(gameState, { row: 1, col: 1, player: gameState.current_player });
+    const newState: gamestate = applyMove(gameState, { row: 1, col: 1, player: gameState.current_player });
     setGameState(newState);
     try {
       await writeGameState('gamestate.txt', 'AI1 Move:', newState);
@@ -69,6 +58,19 @@ export default function Home() {
       setIsProcessing(false);
     }
   }, [gameState, isAiVsAi, isProcessing]);
+
+  //add useeeffect to handle AI vs AI mode
+  useEffect(() => {
+    if (isAiVsAi && gameState.winner === 'blank' && !isProcessing) {
+      // Add small delay to make moves visible
+      const timer = setTimeout(() => {
+
+        handleAiMove();
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.current_player, isAiVsAi, gameState.winner, isProcessing, handleAiMove]);
   
 
   const handleMove = useCallback(async (move: move) => {

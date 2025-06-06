@@ -2,7 +2,7 @@
 
 import fs from 'fs/promises';
 
-import { board,gamestate,cell,move,player } from './game';
+import { board,gamestate,player } from './game';
 
 export async function readGameState(filePath: string, flag: boolean): Promise<{ header: string; state: gamestate }> {
     const content = await fs.readFile(filePath, 'utf-8');

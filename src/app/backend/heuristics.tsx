@@ -2,7 +2,7 @@ import { board, gamestate, player } from "./game";
 import { getCriticalMass } from "./gameengine";
 
 // Heuristic 1: Orb count difference
-function heuristicOrbCount(state: gamestate, aiPlayer: player): number {
+function heuristicOrbCount(state: gamestate, _aiPlayer: player): number {
     let redOrbs = 0;
     let blueOrbs = 0;
     for (const row of state.board) {
@@ -31,7 +31,7 @@ function heuristicCriticalControl(state: gamestate, aiPlayer: player): number {
   }
 
   // Heuristic 3: Board control (number of cells occupied)
-function heuristicBoardControl(state: gamestate, aiPlayer: player): number {
+function heuristicBoardControl(state: gamestate, _aiPlayer: player): number {
     let blueCells = 0;
     let redCells = 0;
     for (const row of state.board) {
@@ -100,52 +100,66 @@ function heuristicExplosionChain(state: gamestate, aiPlayer: player): number {
   }
 
   // Heuristic 5: Positional Safety & Threat Exposure
+
 function heuristicPositionalSafety(state: gamestate, aiPlayer: player): number {
-    const opponent = aiPlayer === 'red' ? 'blue' : 'red';
-    let score = 0;
-  
-    for (let r = 0; r < state.board.length; r++) {
-      for (let c = 0; c < state.board[0].length; c++) {
-        const cell = state.board[r][c];
-        if (cell.player !== aiPlayer) continue;
-  
-        const critical = getCriticalMass(cell, state.board);
-        let danger = false;
-        let safetyBonus = 0;
-  
-        // Corner bonus
-        if ((r === 0 || r === state.board.length - 1) && (c === 0 || c === state.board[0].length - 1)) {
-          safetyBonus += 5;
-        }
-        // Edge bonus
-        else if (r === 0 || r === state.board.length - 1 || c === 0 || c === state.board[0].length - 1) {
-          safetyBonus += 3;
-        }
-  
-        // Check adjacent opponent threats
-        const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-        for (const [dr, dc] of directions) {
-          const nr = r + dr;
-          const nc = c + dc;
-          if (nr >= 0 && nr < state.board.length && nc >= 0 && nc < state.board[0].length) {
-            const neighbor = state.board[nr][nc];
-            if (neighbor.player === opponent && neighbor.orb_count >= getCriticalMass(neighbor,state.board) - 1) {
-              danger = true;
-              break;
+  const opponent = aiPlayer === 'red' ? 'blue' : 'red';
+  let score = 0;
+
+  for (let r = 0; r < state.board.length; r++) {
+    for (let c = 0; c < state.board[0].length; c++) {
+      const cell = state.board[r][c];
+
+      // Only evaluate our own cells
+      if (cell.player !== aiPlayer) continue;
+
+      const critical = getCriticalMass(cell, state.board);
+      const distanceToExplosion = critical - cell.orb_count;
+
+      // Add positional safety bonus (corner and edge preference)
+      let positionalBonus = 0;
+      const isCorner = (r === 0 || r === state.board.length - 1) && (c === 0 || c === state.board[0].length - 1);
+      const isEdge = r === 0 || r === state.board.length - 1 || c === 0 || c === state.board[0].length - 1;
+      if (isCorner) positionalBonus += 5;
+      else if (isEdge) positionalBonus += 3;
+
+      // Check threat from adjacent opponent cells
+      let threatPenalty = 0;
+      const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+
+      for (const [dr, dc] of directions) {
+        const nr = r + dr;
+        const nc = c + dc;
+
+        if (nr >= 0 && nr < state.board.length && nc >= 0 && nc < state.board[0].length) {
+          const neighbor = state.board[nr][nc];
+
+          if (neighbor.player === opponent) {
+            const neighborCritical = getCriticalMass(neighbor, state.board);
+            const neighborThreatLevel = neighbor.orb_count / neighborCritical;
+
+            // Penalize more if the enemy is closer to explosion
+            if (neighbor.orb_count >= neighborCritical - 1) {
+              threatPenalty += 10; // Immediate danger
+            } else {
+              threatPenalty += Math.floor(5 * neighborThreatLevel); // Gradual threat
             }
           }
         }
-  
-        if (danger) {
-          score -= 10; // Threat penalty
-        } else {
-          score += safetyBonus;
-        }
       }
+
+      // Vulnerable cells (1 orb from explosion) get extra penalty
+      if (distanceToExplosion === 1) {
+        threatPenalty += 3;
+      }
+
+      // Final score from this cell
+      score += positionalBonus - threatPenalty;
     }
-  
-    return score;
   }
+
+  return score;
+}
+
 
 export function evaluate(state: gamestate, aiPlayer: player): number {
   if (state.winner !== 'blank') {

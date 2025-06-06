@@ -52,7 +52,7 @@ export function isValidMove(board: board, move: move): boolean {
 }
 
 export function checkAndExplode(board: board, initialCell: cell): void {
-    let queue: cell[] = [];
+    const queue: cell[] = [];
     const rowindex = initialCell.rowIndex;
     const colindex = initialCell.colIndex;
     queue.push(board[rowindex][colindex]);

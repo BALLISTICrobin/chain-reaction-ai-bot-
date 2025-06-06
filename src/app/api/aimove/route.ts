@@ -19,13 +19,13 @@ export async function POST() {
     if (!bestMove) {
       return NextResponse.json({ error: 'No valid moves' }, { status: 400 });
     }
-    let nextHeader = header === 'AI1 Move:' ? 'AI2 Move:' : 'AI1 Move:';
+    const nextHeader = header === 'AI1 Move:' ? 'AI2 Move:' : 'AI1 Move:';
     const newState = applyMove(state, bestMove);
-    await writeGameState('gamestate.txt', header, newState);
+    await writeGameState('gamestate.txt',nextHeader, newState);
     console.log('AI move applied:', bestMove);
     console.log('player after AI move:', newState.current_player);
     return NextResponse.json(newState, { status: 200 });
-  } catch (e) {
+  } catch{
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

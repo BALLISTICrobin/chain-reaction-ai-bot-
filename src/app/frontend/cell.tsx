@@ -1,4 +1,4 @@
-import { cell as cellType, player } from "../backend/game";
+import { cell as cellType} from "../backend/game";
 
 interface CellProps {
   cell: cellType;
