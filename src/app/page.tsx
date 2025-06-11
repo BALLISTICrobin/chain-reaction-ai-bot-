@@ -2,10 +2,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { gamestate, move } from './backend/game';
-import { initializeBoard, applyMove } from './backend/gameengine';
+import { initializeBoard, applyMove,getLegalMoves } from './backend/gameengine';
 import { writeGameState } from './backend/filehandling';
 import Board from './frontend/board';
 import GameStatus from './frontend/gamestatus';
+import { evaluate } from './backend/heuristics';
 
 export default function Home() {
   const [gameState, setGameState] = useState<gamestate>({
@@ -19,6 +20,8 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [firstAiMove, setFirstAiMove] = useState<boolean>(true);
+
 
 
 
@@ -26,18 +29,30 @@ export default function Home() {
   const handleAiMove = useCallback(async () => {
     if (!isAiVsAi || gameState.winner !== 'blank' || isProcessing) return;
 
-    const newState: gamestate = applyMove(gameState, { row: 1, col: 1, player: gameState.current_player });
-    setGameState(newState);
-    try {
-      await writeGameState('gamestate.txt', 'AI1 Move:', newState);
-    } catch (fileError) {
-      console.warn('Failed to save game state:', fileError);
-    }
-
     setIsProcessing(true);
     setError(null);
 
     try {
+      if (firstAiMove) {
+
+        const legalMoves = getLegalMoves(gameState.board, gameState.current_player);
+        if (legalMoves.length === 0) {
+          console.warn('No legal moves available for AI');
+          setError('No legal moves available for AI');
+          setIsProcessing(false);
+          return;
+        }
+
+        const newState: gamestate = applyMove(gameState, legalMoves[0]);
+        setFirstAiMove(false);
+        setGameState(newState);
+        try {
+          await writeGameState('gamestate.txt', 'AI1 Move:', newState);
+        } catch (fileError) {
+          console.warn('Failed to save game state:', fileError);
+        }
+
+      }
       const response = await fetch('/api/aimove', {
         method: 'POST' // Send current game state
       });

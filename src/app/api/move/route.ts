@@ -15,7 +15,12 @@ export async function POST() {
       return NextResponse.json({ error: 'Not AI’s turn' }, { status: 400 });
     }
     console.time('AI move');
-    const [, bestMove] = minimaxSearch(state, 3);
+    const TIMEOUT_MS = 6000; // 5 seconds timeout
+    
+    console.log('Starting minimax search with timeout...');
+    
+    // Call minimax with built-in timeout support
+    const [, bestMove] = minimaxSearch(state, 3, 'blue', TIMEOUT_MS); // Assuming AI is always blue
     console.timeEnd('AI move');
     if (!bestMove) {
       return NextResponse.json({ error: 'No valid moves' }, { status: 400 });

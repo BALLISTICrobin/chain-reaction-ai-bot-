@@ -2,7 +2,7 @@ import { board, gamestate, player } from "./game";
 import { getCriticalMass } from "./gameengine";
 
 // Heuristic 1: Orb count difference
-function heuristicOrbCount(state: gamestate): number {
+function heuristicOrbCount(state: gamestate,aiplayer: player): number {
     let redOrbs = 0;
     let blueOrbs = 0;
     for (const row of state.board) {
@@ -11,7 +11,12 @@ function heuristicOrbCount(state: gamestate): number {
         if (cell.player === 'blue') blueOrbs += cell.orb_count;
       }
     }
-    return blueOrbs - redOrbs;
+    if( aiplayer === 'red') {
+      return redOrbs - blueOrbs; // Red AI's perspective
+    }
+    else {
+      return blueOrbs - redOrbs; // Blue AI's perspective
+    }
   }
 
   // Heuristic 2: Control of critical cells (cells close to critical mass)
@@ -31,7 +36,7 @@ function heuristicCriticalControl(state: gamestate, aiPlayer: player): number {
   }
 
   // Heuristic 3: Board control (number of cells occupied)
-function heuristicBoardControl(state: gamestate): number {
+function heuristicBoardControl(state: gamestate, aiplayer:player): number {
     let blueCells = 0;
     let redCells = 0;
     for (const row of state.board) {
@@ -40,7 +45,12 @@ function heuristicBoardControl(state: gamestate): number {
         if (cell.player === 'red') redCells++;
       }
     }
-    return blueCells - redCells;
+    if (aiplayer === 'red') {
+      return redCells - blueCells; // Red AI's perspective
+    }
+    else {
+      return blueCells - redCells; // Blue AI's perspective
+    }
   }
 
   // Heuristic 4: Potential explosion chain length
@@ -93,6 +103,10 @@ function heuristicExplosionChain(state: gamestate, aiPlayer: player): number {
             }
           }
         }
+      }
+      if(chainLength >= 100) {
+        // Prevent infinite loops in case of very long chains
+        return chainLength;
       }
     }
   
@@ -166,10 +180,12 @@ export function evaluate(state: gamestate, aiPlayer: player): number {
     return state.winner === aiPlayer ? Infinity : -Infinity;
   }
 
-  const orbScore = heuristicOrbCount(state);                  
+  const orbScore = heuristicOrbCount(state,aiPlayer);                  
   const criticalScore = heuristicCriticalControl(state, aiPlayer);     
-  const controlScore = heuristicBoardControl(state);         
-  const chainScore = heuristicExplosionChain(state, aiPlayer);         
+  const controlScore = heuristicBoardControl(state,aiPlayer);
+  console.log('inside chain rection heuristics');         
+  const chainScore = heuristicExplosionChain(state, aiPlayer);
+  console.log('chain score:', chainScore);         
   const safetyScore = heuristicPositionalSafety(state, aiPlayer);      
 
   // Dynamic weight adjustment based on game phase
