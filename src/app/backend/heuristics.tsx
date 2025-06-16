@@ -183,9 +183,9 @@ export function evaluate(state: gamestate, aiPlayer: player): number {
   const orbScore = heuristicOrbCount(state,aiPlayer);                  
   const criticalScore = heuristicCriticalControl(state, aiPlayer);     
   const controlScore = heuristicBoardControl(state,aiPlayer);
-  console.log('inside chain rection heuristics');         
+  // console.log('inside chain rection heuristics');         
   const chainScore = heuristicExplosionChain(state, aiPlayer);
-  console.log('chain score:', chainScore);         
+  // console.log('chain score:', chainScore);         
   const safetyScore = heuristicPositionalSafety(state, aiPlayer);      
 
   // Dynamic weight adjustment based on game phase

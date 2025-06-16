@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { gamestate, move } from './backend/game';
-import { initializeBoard, applyMove,getLegalMoves } from './backend/gameengine';
+import { initializeBoard, applyMove, getLegalMoves } from './backend/gameengine';
 import { writeGameState } from './backend/filehandling';
 import Board from './frontend/board';
 import GameStatus from './frontend/gamestatus';
@@ -16,50 +16,51 @@ export default function Home() {
   });
 
   const [isAiVsAi, setIsAiVsAi] = useState(false);
-
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [firstAiMove, setFirstAiMove] = useState<boolean>(true);
 
-
-
-
+  // Add a new state to track if we're waiting for API response
+  const [isWaitingForApi, setIsWaitingForApi] = useState(false);
 
   const handleAiMove = useCallback(async () => {
     if (!isAiVsAi || gameState.winner !== 'blank' || isProcessing) return;
 
     setIsProcessing(true);
+    setIsWaitingForApi(true); // Set waiting state
     setError(null);
 
     try {
       if (firstAiMove) {
-
         const legalMoves = getLegalMoves(gameState.board, gameState.current_player);
         if (legalMoves.length === 0) {
           console.warn('No legal moves available for AI');
           setError('No legal moves available for AI');
           setIsProcessing(false);
+          setIsWaitingForApi(false);
           return;
         }
 
         const newState: gamestate = applyMove(gameState, legalMoves[0]);
         setFirstAiMove(false);
-        setGameState(newState);
+
+        // Don't update gameState here - wait for API response
         try {
           await writeGameState('gamestate.txt', 'AI1 Move:', newState);
         } catch (fileError) {
           console.warn('Failed to save game state:', fileError);
         }
-
       }
+
       const response = await fetch('/api/aimove', {
-        method: 'POST' // Send current game state
+        method: 'POST'
       });
 
       if (response.ok) {
         const aiState = await response.json();
         console.log('AI move result:', aiState);
+
+        // Only update UI after successful API response
         setGameState(aiState);
       } else {
         const errorText = await response.text();
@@ -71,46 +72,36 @@ export default function Home() {
       setError('Failed to get AI move. Please try again.');
     } finally {
       setIsProcessing(false);
+      setIsWaitingForApi(false); // Clear waiting state
     }
   }, [gameState, isAiVsAi, isProcessing]);
 
-  //add useeeffect to handle AI vs AI mode
+  // Updated useEffect to handle AI vs AI mode
   useEffect(() => {
-    if (isAiVsAi && gameState.winner === 'blank' && !isProcessing) {
+    if (isAiVsAi && gameState.winner === 'blank' && !isProcessing && !isWaitingForApi) {
       // Add small delay to make moves visible
       const timer = setTimeout(() => {
-
         handleAiMove();
       }, 2000);
 
       return () => clearTimeout(timer);
     }
-  }, [gameState.current_player, isAiVsAi, gameState.winner, isProcessing, handleAiMove]);
-  
+  }, [gameState.current_player, isAiVsAi, gameState.winner, isProcessing, isWaitingForApi, handleAiMove]);
 
   const handleMove = useCallback(async (move: move) => {
     // Only allow human moves in human vs AI mode
-    if (isAiVsAi || gameState.current_player !== 'red' || gameState.winner !== 'blank' || isProcessing) {
+    if (isAiVsAi || gameState.current_player !== 'red' || gameState.winner !== 'blank' || isProcessing || isWaitingForApi) {
       console.log('Move blocked - invalid conditions');
       return;
     }
 
     setIsProcessing(true);
+    setIsWaitingForApi(true); // Set waiting state
     setError(null);
-    // let progressInterval: NodeJS.Timeout;
-    // let dots = 0;
-
-    // const updateProgress = () => {
-    //   dots = (dots + 1) % 4;
-    //   setError(`AI is thinking${'.'.repeat(dots)}`);
-    // };
-
-    // progressInterval = setInterval(updateProgress, 500);
 
     try {
-      // Apply human move
+      // Apply human move locally first
       const newState = applyMove(gameState, move);
-      setGameState(newState);
 
       // Save game state
       try {
@@ -119,14 +110,18 @@ export default function Home() {
         console.warn('Failed to save game state:', fileError);
       }
 
+      // Update UI with human move immediately
+      setGameState(newState);
+
       // Check if game ended after human move
       if (newState.winner !== 'blank') {
         console.log('Game ended after human move, winner:', newState.winner);
         setIsProcessing(false);
+        setIsWaitingForApi(false);
         return;
       }
 
-      // AI's turn
+      // AI's turn - wait for API response before updating UI
       setTimeout(async () => {
         try {
           const response = await fetch('/api/move', {
@@ -139,6 +134,7 @@ export default function Home() {
 
           if (response.ok) {
             const aiState = await response.json();
+            // Only update UI after successful API response
             setGameState(aiState);
           } else {
             const errorData = await response.text();
@@ -150,6 +146,7 @@ export default function Home() {
           setError('Failed to get AI move. Please try again.');
         } finally {
           setIsProcessing(false);
+          setIsWaitingForApi(false); // Clear waiting state
         }
       }, 500);
 
@@ -157,9 +154,9 @@ export default function Home() {
       console.error('Error applying move:', gameError);
       setError(`Invalid move: ${gameError instanceof Error ? gameError.message : 'Unknown error'}`);
       setIsProcessing(false);
+      setIsWaitingForApi(false);
     }
-  }, [gameState, isProcessing, isAiVsAi]);
-  
+  }, [gameState, isProcessing, isAiVsAi, isWaitingForApi]);
 
   const resetGame = useCallback(() => {
     setGameState({
@@ -168,7 +165,9 @@ export default function Home() {
       winner: 'blank',
     });
     setIsProcessing(false);
+    setIsAiVsAi(false);
     setError(null);
+    setIsWaitingForApi(false); // Reset waiting state
   }, []);
 
   const dismissError = useCallback(() => {
@@ -189,7 +188,7 @@ export default function Home() {
               resetGame(); // clean slate
               setIsAiVsAi(true); // then activate AI loop
             }}
-            disabled={isProcessing}
+            disabled={isProcessing || isWaitingForApi}
           >
             🤖Ai vs 🤖Ai
           </button>
@@ -200,7 +199,7 @@ export default function Home() {
               resetGame(); // clean slate
               setIsAiVsAi(false); // then activate AI loop
             }}
-            disabled={isProcessing}
+            disabled={isProcessing || isWaitingForApi}
           >
             human vs 🤖Ai
           </button>
@@ -209,12 +208,11 @@ export default function Home() {
           <button
             className="btn btn-outline btn-sm"
             onClick={resetGame}
-            disabled={isProcessing}
+            disabled={isProcessing || isWaitingForApi}
           >
             🔄 New Game
           </button>
         </div>
-
       </div>
 
       {/* Error Alert */}
@@ -251,14 +249,21 @@ export default function Home() {
             </div>
           </div>
         </div>
-        {isProcessing && (
-          <div className="spinner text-primary">🤖 Thinking...</div>
+
+        {/* Simple processing indicator without overlay */}
+        {isWaitingForApi && (
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-base-100 rounded-lg shadow">
+              <span className="loading loading-spinner loading-sm text-primary"></span>
+              <span className="text-sm">AI is thinking...</span>
+            </div>
+          </div>
         )}
 
         {/* Game Status */}
-        <GameStatus state={gameState} flag={isAiVsAi}/>
+        <GameStatus state={gameState} flag={isAiVsAi} />
 
-        {/* Game Board */}
+        {/* Game Board - This will freeze during API calls */}
         <Board state={gameState} onMove={handleMove} />
 
         {/* Game Rules */}
@@ -278,20 +283,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        {/* Loading Overlay */}
-        {isProcessing && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="card bg-base-100 shadow-xl">
-              <div className="card-body items-center text-center">
-                <span className="loading loading-spinner loading-lg text-primary"></span>
-                <p className="mt-2">
-                  {gameState.current_player === 'blue' ? 'AI is thinking...' : 'Processing move...'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Footer */}

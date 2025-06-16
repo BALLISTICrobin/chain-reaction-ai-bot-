@@ -218,12 +218,13 @@ export function minimaxSearch(state: gamestate, depthLimit: number, aiPlayer: pl
     const maximizingPlayer = state.current_player === aiPlayer;
     startTime = timeLimit ? Date.now() : undefined;
 
-    console.log('Starting minimax search with depth limit:', depthLimit, 'and time limit:', timeLimit);
+    // console.log('Starting minimax search with depth limit:', depthLimit, 'and time limit:', timeLimit);
 
     numOfNodesEvaluated = 0;
 
 
     const [score, bestMove] = alphaBeta(state, depthLimit, -Infinity, Infinity, maximizingPlayer, aiPlayer, startTime, timeLimit);
+    console.log(`Minimax search completed. Score: ${score}`, `Best Move: ${bestMove?.row}, ${bestMove?.col}`);
 
     if (bestMove == null) {
         // Allocate a random move if no best move is found
