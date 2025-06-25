@@ -6,7 +6,6 @@ import { initializeBoard, applyMove, getLegalMoves } from './backend/gameengine'
 
 import Board from './frontend/board';
 import GameStatus from './frontend/gamestatus';
-import { evaluate } from './backend/heuristics';
 
 export default function Home() {
   const [gameState, setGameState] = useState<gamestate>({

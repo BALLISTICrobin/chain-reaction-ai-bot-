@@ -174,29 +174,29 @@ function heuristicPositionalSafety(state: gamestate, aiPlayer: player): number {
   return score;
 }
 
-export function even_priority_heuristic(state: gamestate, aiPlayer: player): number {
+// export function even_priority_heuristic(state: gamestate, aiPlayer: player): number {
   
-  let score = 0;
-  for (let r = 0; r < state.board.length; r++) {
-    for (let c = 0; c < state.board[0].length; c++) {
-      const cell = state.board[r][c];
+//   let score = 0;
+//   for (let r = 0; r < state.board.length; r++) {
+//     for (let c = 0; c < state.board[0].length; c++) {
+//       const cell = state.board[r][c];
 
-      if(cell.player==aiPlayer){
-        let sum_of_row_col = r+c;
-        if(sum_of_row_col%2==0){
+//       if(cell.player==aiPlayer){
+//         let sum_of_row_col = r+c;
+//         if(sum_of_row_col%2==0){
           
-          score+=sum_of_row_col;
-          score += r;
-        }
-        else{
-          score+=0;
-        }
+//           score+=sum_of_row_col;
+//           score += r;
+//         }
+//         else{
+//           score+=0;
+//         }
         
-      }
-    }}
-    return score;
+//       }
+//     }}
+//     return score;
 
-}
+// }
 
 
 export function evaluate(state: gamestate, aiPlayer: player): number {

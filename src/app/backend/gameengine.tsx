@@ -1,5 +1,5 @@
 import { player, cell, move, gamestate, board } from "./game";
-import { evaluate,even_priority_heuristic } from "./heuristics";
+import { evaluate} from "./heuristics";
 
 export function initializeBoard(rows: number = 9, cols: number = 6): board {
     const newBoard: board = [];
@@ -51,7 +51,7 @@ export function isValidMove(board: board, move: move): boolean {
     return targetCell.player === move.player || targetCell.player === 'blank';
 }
 
-let startTime: any;
+// let startTime: any;
 
 export function checkAndExplode(board: board, initialCell: cell): void {
     const queue: cell[] = [];
@@ -213,17 +213,17 @@ export function getLegalMoves(board: board, player: player): move[] {
 //     return result;
 // }
 
-let numOfNodesEvaluated = 0;
+//let numOfNodesEvaluated = 0;
 export function minimaxSearch(state: gamestate, depthLimit: number, aiPlayer: player, timeLimit?: number): [number, move | null] {
     const maximizingPlayer = state.current_player === aiPlayer;
-    startTime = timeLimit ? Date.now() : undefined;
+    // startTime = timeLimit ? Date.now() : undefined;
 
     // console.log('Starting minimax search with depth limit:', depthLimit, 'and time limit:', timeLimit);
 
-    numOfNodesEvaluated = 0;
+    //numOfNodesEvaluated = 0;
 
 
-    const [score, bestMove] = alphaBeta(state, depthLimit, -Infinity, Infinity, maximizingPlayer, aiPlayer, startTime, timeLimit);
+    const [score, bestMove] = alphaBeta(state, depthLimit, -Infinity, Infinity, maximizingPlayer, aiPlayer);
     console.log(`Minimax search completed. Score: ${score}`, `Best Move: ${bestMove?.row}, ${bestMove?.col}`);
 
     if (bestMove == null) {
@@ -261,12 +261,10 @@ function alphaBeta(
     alpha: number,
     beta: number,
     maximizingPlayer: boolean,
-    aiPlayer: player,
-    startTime?: number,
-    timeLimit?: number
+    aiPlayer: player
 
 ): [number, move | null] {
-    numOfNodesEvaluated++;
+    //numOfNodesEvaluated++;
     // checkTimeout(startTime, timeLimit);
 
     if (state.winner !== 'blank') {
@@ -293,7 +291,7 @@ function alphaBeta(
 
             const newState = applyMove(state, move);
             const nextMaximizing = newState.current_player === aiPlayer;
-            const [evalScore] = alphaBeta(newState, depth - 1, alpha, beta, nextMaximizing, aiPlayer, startTime, timeLimit);
+            const [evalScore] = alphaBeta(newState, depth - 1, alpha, beta, nextMaximizing, aiPlayer);
             if (evalScore > maxEval) {
                 maxEval = evalScore;
                 bestMove = move;
@@ -311,7 +309,7 @@ function alphaBeta(
 
             const newState = applyMove(state, move);
             const nextMaximizing = newState.current_player === aiPlayer;
-            const [evalScore] = alphaBeta(newState, depth - 1, alpha, beta, nextMaximizing, aiPlayer, startTime, timeLimit);
+            const [evalScore] = alphaBeta(newState, depth - 1, alpha, beta, nextMaximizing, aiPlayer);
             if (evalScore < minEval) {
                 minEval = evalScore;
                 bestMove = move;
