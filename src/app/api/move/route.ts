@@ -1,34 +1,44 @@
 import { NextResponse } from 'next/server';
-import { readGameState,writeGameState } from '../../backend/filehandling';
-import { applyMove } from '../../backend/gameengine';
-import { minimaxSearch } from '../../backend/gameengine';// Adjust if minimax is in gameengine.tsx
-import path from 'path';
+import { applyMove } from '@/app/backend/gameengine';
+import { minimaxSearch } from '@/app/backend/gameengine';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     console.log('AI move request received');
-    const filePath = path.join(process.cwd(), 'gamestate.txt'); // Absolute path
-
-    const { header, state } = await readGameState(filePath,false);
-    console.log('Current game header:', header);
-    if (header !== 'Human Move:') {
-      return NextResponse.json({ error: 'Not AI’s turn' }, { status: 400 });
+    
+    // Get the current game state from request body (sent from frontend)
+    const currentState = await request.json();
+    
+    // Validate it's the AI's turn (blue player)
+    if (currentState.current_player !== 'blue') {
+      return NextResponse.json({ error: 'Not AI\'s turn' }, { status: 400 });
     }
+
+    // Validate game hasn't ended
+    if (currentState.winner !== 'blank') {
+      return NextResponse.json({ error: 'Game already ended' }, { status: 400 });
+    }
+
+    const TIMEOUT_MS = 6000;
+    
+    console.log('Starting minimax search...');
     console.time('AI move');
-    const TIMEOUT_MS = 6000; // 5 seconds timeout
     
-    console.log('Starting minimax search with timeout...');
+    const [, bestMove] = minimaxSearch(currentState, 3, 'blue', TIMEOUT_MS);
     
-    // Call minimax with built-in timeout support
-    const [, bestMove] = minimaxSearch(state, 3, 'blue', TIMEOUT_MS); // Assuming AI is always blue
     console.timeEnd('AI move');
+
     if (!bestMove) {
       return NextResponse.json({ error: 'No valid moves' }, { status: 400 });
     }
-    const newState = applyMove(state, bestMove);
-    await writeGameState(filePath, 'AI Move:', newState);
+
+    const newState = applyMove(currentState, bestMove);
+    
+    console.log('AI move applied:', bestMove);
+    
     return NextResponse.json(newState, { status: 200 });
-  } catch{
+  } catch (error) {
+    console.error('Server error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

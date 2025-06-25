@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { gamestate, move } from './backend/game';
 import { initializeBoard, applyMove, getLegalMoves } from './backend/gameengine';
-import { writeGameState } from './backend/filehandling';
+
 import Board from './frontend/board';
 import GameStatus from './frontend/gamestatus';
 import { evaluate } from './backend/heuristics';
@@ -19,15 +19,13 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [firstAiMove, setFirstAiMove] = useState<boolean>(true);
-
-  // Add a new state to track if we're waiting for API response
   const [isWaitingForApi, setIsWaitingForApi] = useState(false);
 
   const handleAiMove = useCallback(async () => {
     if (!isAiVsAi || gameState.winner !== 'blank' || isProcessing) return;
 
     setIsProcessing(true);
-    setIsWaitingForApi(true); // Set waiting state
+    setIsWaitingForApi(true);
     setError(null);
 
     try {
@@ -43,24 +41,27 @@ export default function Home() {
 
         const newState: gamestate = applyMove(gameState, legalMoves[0]);
         setFirstAiMove(false);
+        setGameState(newState); // Update state immediately
 
-        // Don't update gameState here - wait for API response
-        try {
-          await writeGameState('gamestate.txt', 'AI1 Move:', newState);
-        } catch (fileError) {
-          console.warn('Failed to save game state:', fileError);
+        // Check if game ended after first move
+        if (newState.winner !== 'blank') {
+          setIsProcessing(false);
+          setIsWaitingForApi(false);
+          return;
         }
       }
 
       const response = await fetch('/api/aimove', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(gameState), // Send current state
       });
 
       if (response.ok) {
         const aiState = await response.json();
         console.log('AI move result:', aiState);
-
-        // Only update UI after successful API response
         setGameState(aiState);
       } else {
         const errorText = await response.text();
@@ -72,14 +73,13 @@ export default function Home() {
       setError('Failed to get AI move. Please try again.');
     } finally {
       setIsProcessing(false);
-      setIsWaitingForApi(false); // Clear waiting state
+      setIsWaitingForApi(false);
     }
-  }, [gameState, isAiVsAi, isProcessing]);
+  }, [gameState, isAiVsAi, isProcessing, firstAiMove]);
 
   // Updated useEffect to handle AI vs AI mode
   useEffect(() => {
     if (isAiVsAi && gameState.winner === 'blank' && !isProcessing && !isWaitingForApi) {
-      // Add small delay to make moves visible
       const timer = setTimeout(() => {
         handleAiMove();
       }, 2000);
@@ -89,28 +89,18 @@ export default function Home() {
   }, [gameState.current_player, isAiVsAi, gameState.winner, isProcessing, isWaitingForApi, handleAiMove]);
 
   const handleMove = useCallback(async (move: move) => {
-    // Only allow human moves in human vs AI mode
     if (isAiVsAi || gameState.current_player !== 'red' || gameState.winner !== 'blank' || isProcessing || isWaitingForApi) {
       console.log('Move blocked - invalid conditions');
       return;
     }
 
     setIsProcessing(true);
-    setIsWaitingForApi(true); // Set waiting state
+    setIsWaitingForApi(true);
     setError(null);
 
     try {
       // Apply human move locally first
       const newState = applyMove(gameState, move);
-
-      // Save game state
-      try {
-        await writeGameState('gamestate.txt', 'Human Move:', newState);
-      } catch (fileError) {
-        console.warn('Failed to save game state:', fileError);
-      }
-
-      // Update UI with human move immediately
       setGameState(newState);
 
       // Check if game ended after human move
@@ -121,7 +111,7 @@ export default function Home() {
         return;
       }
 
-      // AI's turn - wait for API response before updating UI
+      // AI's turn - send updated state to API
       setTimeout(async () => {
         try {
           const response = await fetch('/api/move', {
@@ -129,12 +119,11 @@ export default function Home() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(newState),
+            body: JSON.stringify(newState), // Send state after human move
           });
 
           if (response.ok) {
             const aiState = await response.json();
-            // Only update UI after successful API response
             setGameState(aiState);
           } else {
             const errorData = await response.text();
@@ -146,7 +135,7 @@ export default function Home() {
           setError('Failed to get AI move. Please try again.');
         } finally {
           setIsProcessing(false);
-          setIsWaitingForApi(false); // Clear waiting state
+          setIsWaitingForApi(false);
         }
       }, 500);
 
@@ -167,13 +156,15 @@ export default function Home() {
     setIsProcessing(false);
     setIsAiVsAi(false);
     setError(null);
-    setIsWaitingForApi(false); // Reset waiting state
+    setIsWaitingForApi(false);
+    setFirstAiMove(true); // Reset first move flag
   }, []);
 
   const dismissError = useCallback(() => {
     setError(null);
   }, []);
 
+  // Rest of your JSX remains exactly the same...
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-200 to-base-300">
       {/* Header */}

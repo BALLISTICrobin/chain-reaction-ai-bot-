@@ -1,5 +1,5 @@
 import { player, cell, move, gamestate, board } from "./game";
-import { evaluate } from "./heuristics";
+import { evaluate,even_priority_heuristic } from "./heuristics";
 
 export function initializeBoard(rows: number = 9, cols: number = 6): board {
     const newBoard: board = [];
@@ -323,3 +323,72 @@ function alphaBeta(
         return [minEval, bestMove];
     }
 }
+
+// function alphaBeta(
+//     state: gamestate,
+//     depth: number,
+//     alpha: number,
+//     beta: number,
+//     maximizingPlayer: boolean,
+//     aiPlayer: player,
+//     startTime?: number,
+//     timeLimit?: number
+
+// ): [number, move | null] {
+//     numOfNodesEvaluated++;
+//     // checkTimeout(startTime, timeLimit);
+
+//     if (state.winner !== 'blank') {
+//         return [even_priority_heuristic(state, aiPlayer), null];
+//     }
+
+//     if (depth === 0) {
+//         return [even_priority_heuristic(state, aiPlayer), null];
+//     }
+
+//     const player = state.current_player;
+//     const moves = getLegalMoves(state.board, player);
+//     if (moves.length === 0) {
+//         return [even_priority_heuristic(state, aiPlayer), null];
+//     }
+
+//     let bestMove: move | null = null;
+
+//     if (maximizingPlayer) {
+//         let maxEval = -Infinity;
+//         for (const move of moves) {
+//             // checkTimeout(startTime, timeLimit);
+
+
+//             const newState = applyMove(state, move);
+//             const nextMaximizing = newState.current_player === aiPlayer;
+//             const [evalScore] = alphaBeta(newState, depth - 1, alpha, beta, nextMaximizing, aiPlayer, startTime, timeLimit);
+//             if (evalScore > maxEval) {
+//                 maxEval = evalScore;
+//                 bestMove = move;
+//             }
+//             alpha = Math.max(alpha, maxEval);
+//             if (beta <= alpha) break;
+
+//         }
+//         return [maxEval, bestMove];
+//     } else {
+//         let minEval = Infinity;
+//         for (const move of moves) {
+//             // checkTimeout(startTime, timeLimit);
+
+
+//             const newState = applyMove(state, move);
+//             const nextMaximizing = newState.current_player === aiPlayer;
+//             const [evalScore] = alphaBeta(newState, depth - 1, alpha, beta, nextMaximizing, aiPlayer, startTime, timeLimit);
+//             if (evalScore < minEval) {
+//                 minEval = evalScore;
+//                 bestMove = move;
+//             }
+//             beta = Math.min(beta, minEval);
+//             if (beta <= alpha) break;
+
+//         }
+//         return [minEval, bestMove];
+//     }
+// }
