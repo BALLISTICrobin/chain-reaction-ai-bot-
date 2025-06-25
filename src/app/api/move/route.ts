@@ -19,12 +19,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Game already ended' }, { status: 400 });
     }
 
-    const TIMEOUT_MS = 6000;
+    // const TIMEOUT_MS = 6000;
     
     console.log('Starting minimax search...');
     console.time('AI move');
     
-    const [, bestMove] = minimaxSearch(currentState, 3, 'blue', TIMEOUT_MS);
+    const [, bestMove] = minimaxSearch(currentState, 3, 'blue');
     
     console.timeEnd('AI move');
 

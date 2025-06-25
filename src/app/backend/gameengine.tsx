@@ -214,7 +214,7 @@ export function getLegalMoves(board: board, player: player): move[] {
 // }
 
 //let numOfNodesEvaluated = 0;
-export function minimaxSearch(state: gamestate, depthLimit: number, aiPlayer: player, timeLimit?: number): [number, move | null] {
+export function minimaxSearch(state: gamestate, depthLimit: number, aiPlayer: player): [number, move | null] {
     const maximizingPlayer = state.current_player === aiPlayer;
     // startTime = timeLimit ? Date.now() : undefined;
 
